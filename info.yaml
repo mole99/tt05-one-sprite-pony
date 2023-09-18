@@ -5,12 +5,12 @@ project:
 
 # If using an HDL, set wokwi_id as 0 and uncomment and list your source files here. 
 # Source files must be in ./src and you must list each source file separately
-source_files:
-  - tt_um_top_mole99.sv
-  - top.sv
-  - sprite.sv
-  - timing.sv
-top_module:  "tt_um_top_mole99"      # Put the name of your top module here, must start with "tt_um_". Make it unique by including your github username
+  source_files:
+    - tt_um_top_mole99.sv
+    - top.sv
+    - sprite.sv
+    - timing.sv
+  top_module:  "tt_um_top_mole99"      # Put the name of your top module here, must start with "tt_um_". Make it unique by including your github username
 
 # How many tiles your design occupies? A single tile is about 167x108 uM.
   tiles: "1x1"    # Valid values: 1x1, 1x2, 2x2, 3x2, 4x2 or 8x2
@@ -30,11 +30,14 @@ documentation:
 
 # Longer description of how the project works. You can use standard markdown format.
   how_it_works: |
-      Explain how your project works
+      A one-trick pony is someone or something that is good at doing only one thing. Accordingly, a one-sprite pony can display only one sprite and that's what this design does:
+      
+      This Verilog design will generate 800x600 60Hz SVGA output, internally the resolution is decreased to 100x75, thus one pixel is really 8x8 pixels.
+      The sprite is 10x10 pixel in size and upon startup is initialized to a pixel version of the TinyTapeout logo.
 
 # Instructions on how someone could test your project, include things like what buttons do what and how to set the clock if needed
   how_to_test:  |
-      Explain how to test your project
+      Connect the outputs to a VGA Pmod. By default, you should see the TinyTapeout logo moving around the screen.
 
 # A description of what the inputs do (e.g. red button, SPI CLK, SPI MOSI, etc).
   inputs:               
