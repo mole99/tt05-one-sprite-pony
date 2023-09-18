@@ -30,7 +30,7 @@ module tt_um_top_mole99 (
         .rrggbb     (uo_out[7:2]),
         .hsync      (uo_out[0]),
         .vsync      (uo_out[1]),
-        .next_line  (uio_out[0]),
+        .next_vertical  (uio_out[0]),
         .next_frame (uio_out[1])
     );
 
