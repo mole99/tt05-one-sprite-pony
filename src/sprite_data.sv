@@ -3,14 +3,13 @@
 
 `timescale 1ns/1ps
 
-module sprite #(
+module sprite_data #(
     parameter WIDTH,
     parameter HEIGHT
 )(
     input  logic clk,      // clock
     input  logic reset_n,  // reset 
     input  logic shiftf,    // shift sprite data
-    input  logic shiftb,    // shift sprite data
     output logic data_out,      // pixel data
     input  logic load,
     input  logic data_in
@@ -44,10 +43,6 @@ module sprite #(
                 end else begin
                     sprite_data <= {data_in, sprite_data[WIDTH*HEIGHT-1:1]};
                 end
-                
-            end
-            if (shiftb) begin
-                sprite_data <= {sprite_data[WIDTH*HEIGHT-2:0], sprite_data[WIDTH*HEIGHT-1]};
             end
         end
     end

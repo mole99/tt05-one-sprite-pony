@@ -16,7 +16,7 @@ module tt_um_top_mole99 (
 );
 
     assign uio_oe = 8'b11111111;
-    assign uio_out[7:1] = 7'b0000000;
+    assign uio_out[7:2] = 6'b000000;
 
     top top_inst (
         .clk        (clk),
@@ -30,7 +30,8 @@ module tt_um_top_mole99 (
         .rrggbb     (uo_out[7:2]),
         .hsync      (uo_out[0]),
         .vsync      (uo_out[1]),
-        .next_frame (uio_out[0])
+        .next_line  (uio_out[0]),
+        .next_frame (uio_out[1])
     );
 
 endmodule

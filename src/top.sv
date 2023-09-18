@@ -16,6 +16,7 @@ module top (
     output logic [5:0] rrggbb,
     output logic hsync,
     output logic vsync,
+    output logic next_vertical,
     output logic next_frame
 );
 
@@ -37,13 +38,10 @@ module top (
     
     localparam HTOTAL = WIDTH + HFRONT + HSYNC + HBACK;
     localparam VTOTAL = HEIGHT + VFRONT + VSYNC + VBACK;
-
-    /* verilator lint_off WIDTH */
     
     logic signed [$clog2(HTOTAL) : 0] counter_h;
     logic signed [$clog2(VTOTAL) : 0] counter_v;
     
-    logic next_vertical;
     logic hblank, vblank;
 
     localparam logic [5:0] BACKGROUND_COLOR = 6'b010101;
@@ -87,106 +85,86 @@ module top (
     localparam WIDTH_SMALL    = WIDTH / 8;
     localparam HEIGHT_SMALL   = HEIGHT / 8;
 
-    logic signed [$clog2(HTOTAL) - 3 : 0] counter_h_small;
-    logic signed [$clog2(VTOTAL) - 3 : 0] counter_v_small;
-
-    assign counter_h_small = counter_h[$clog2(HTOTAL) : 3];
-    assign counter_v_small = counter_v[$clog2(VTOTAL) : 3];
-    
     /*
-        Sprite
+        Sprite drawing logic
+        
+        The sprite is implemented as one shift-register to save on resources.
+        If we were rendering at the normal resolution of 800x600, we would simply shift the sprite by one when we needed new pixel data.
+        However, since our internal resolution is 100x75, one sprite pixel is actually 8x8 real pixels.
+        This means that we need to access the same sprite data for 8 rows in a row.
+        
+        One solution would be to have a bidirectional shift register, where in 7 out of 8 rows we first shift the data back before reading the sprite data.
+        This would drastically increase resources since each flipflop would need a mux2 on its data input.
+        
+        The solution used here is to have the first row of the 8x8 pixel read the data from the sprite into a temporary shift register.
+        This shift register is shifted as loaded when new horizontal sprite data is needed, but repeats automatically for the remaining 7 of 8 rows.
     */
 
     localparam SPRITE_WIDTH = 10;
     localparam SPRITE_HEIGHT = 10;
     
-    logic sprite_pixel;
     logic [7:0] sprite_x;
     logic [7:0] sprite_y;
     
-    logic sprite_x_dir;
-    logic sprite_y_dir;
-    
-    //logic wall_hit;
-    //assign wall_hit = 
-    
-    // Sprite movement logic
-    always_ff @(posedge clk, negedge reset_n) begin
-        if (!reset_n) begin
-            sprite_x <= '0;
-            sprite_y <= '0;
-            sprite_x_dir <= '0;
-            sprite_y_dir <= '0;
-        end else begin
-            if (next_frame) begin
-                if (sprite_x_dir == 1'b0) begin
-                    sprite_x <= sprite_x + 1;
-                    
-                    if (sprite_x == WIDTH_SMALL - SPRITE_WIDTH - 1) begin
-                        sprite_x_dir <= 1;
-                    end
-                end else begin
-                    sprite_x <= sprite_x - 1;
-                    
-                    if (sprite_x == 1) begin
-                        sprite_x_dir <= 0;
-                    end
-                end
-   
-                if (sprite_y_dir == 1'b0) begin
-                    sprite_y <= sprite_y + 1;
-                    
-                    if (sprite_y == HEIGHT_SMALL - SPRITE_HEIGHT - 1) begin
-                        sprite_y_dir <= 1;
-                    end
-                end else begin
-                    sprite_y <= sprite_y - 1;
-                    
-                    if (sprite_y == 1) begin
-                        sprite_y_dir <= 0;
-                    end
-                end
-            end
-        end
-    end
-    
-    // Sprite access/drawing logic
-    logic sprite_enable;
-    logic sprite_shiftf;
-    logic sprite_shiftb;
-    
-    logic sprite_is_vertical;
-    logic sprite_is_horizontal;
-    
-    assign sprite_is_vertical = counter_v_small >= sprite_y && counter_v_small < (sprite_y + SPRITE_HEIGHT);
-    assign sprite_is_horizontal = counter_h_small >= sprite_x && counter_h_small < (sprite_x + SPRITE_WIDTH);
-    
-    // Always access the sprite at the end of a big pixel
-    logic sprite_access;
-    assign sprite_access = &counter_h[2:0];
-    
-    logic sprite_is_horizontal_before;
-    assign sprite_is_horizontal_before = counter_h_small >= ($signed(sprite_x) - SPRITE_WIDTH) && counter_h_small < $signed(sprite_x);
-    
-    assign sprite_enable = sprite_is_horizontal && sprite_is_vertical;
-    
-    // Shift during the pixel
-    assign sprite_shiftf = sprite_is_horizontal && sprite_is_vertical;
-    
-    // Don't shift back before the first line so that we get the next pixel
-    assign sprite_shiftb = sprite_is_horizontal_before && sprite_is_vertical && (counter_v[2:0] != 0);
-
-    sprite #(
-        .WIDTH  (SPRITE_WIDTH),
-        .HEIGHT (SPRITE_HEIGHT)
-    ) sprite_inst (
+    sprite_movement #(
+        .SPRITE_WIDTH  (SPRITE_WIDTH),
+        .SPRITE_HEIGHT (SPRITE_HEIGHT),
+        .WIDTH_SMALL   (WIDTH_SMALL),
+        .HEIGHT_SMALL  (HEIGHT_SMALL)
+    ) sprite_movement_inst (
         .clk        (clk),
         .reset_n    (reset_n),
-        .shiftf      ((sprite_shiftf && sprite_access) || spi_clk_edge),
-        .shiftb      ((sprite_shiftb && sprite_access)),
-        .data_out    (sprite_pixel),
-        .data_in     (spi_data_sync),
-        .load        (spi_clk_edge)
+        
+        .next_frame (next_frame),
+        
+        .sprite_x   (sprite_x),
+        .sprite_y   (sprite_y)
+    );
+    
+    logic signed [$clog2(HTOTAL) - 3 : 0] counter_h_small;
+    logic signed [$clog2(VTOTAL) - 3 : 0] counter_v_small;
+
+    assign counter_h_small = counter_h[$clog2(HTOTAL) : 3];
+    assign counter_v_small = counter_v[$clog2(VTOTAL) : 3];
+
+    logic sprite_visible_v;
+    logic sprite_visible_h;
+    logic sprite_visible;
+    
+    assign sprite_visible_h = counter_h_small >= {1'b0, sprite_x} && counter_h_small < (sprite_x + SPRITE_WIDTH);
+    assign sprite_visible_v = counter_v_small >= sprite_y && counter_v_small < (sprite_y + SPRITE_HEIGHT);
+    assign sprite_visible = sprite_visible_h && sprite_visible_v;
+    
+    logic sprite_data;
+    logic sprite_shift;
+    
+    sprite_data #(
+        .WIDTH  (SPRITE_WIDTH),
+        .HEIGHT (SPRITE_HEIGHT)
+    ) sprite_data_inst (
+        .clk        (clk),
+        .reset_n    (reset_n),
+        .shiftf     (sprite_shift || spi_clk_edge),
+        .data_out   (sprite_data),
+        .data_in    (spi_data_sync),
+        .load       (spi_clk_edge)
+    );
+    
+    logic sprite_pixel;
+    
+    sprite_access #(
+        .WIDTH  (SPRITE_WIDTH)
+    ) sprite_access_inst (
+        .clk        (clk),
+
+        .new_line       (counter_v[2:0] == 3'b000),
+        .sprite_access  (counter_h[2:0] == 3'b111),
+        
+        .sprite_data    (sprite_data),
+        .sprite_shift   (sprite_shift),
+
+        .sprite_pixel   (sprite_pixel),
+        .sprite_visible (sprite_visible)
     );
     
     /*
@@ -196,7 +174,7 @@ module top (
     always_comb begin
         rrggbb = BACKGROUND_COLOR;
         
-        if (sprite_pixel && sprite_enable) begin
+        if (sprite_pixel && sprite_visible) begin
             rrggbb = 6'b111111;
         end
         
