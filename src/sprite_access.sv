@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 `timescale 1ns/1ps
+`default_nettype none
 
 module sprite_access #(
-    parameter WIDTH
+    parameter WIDTH             // width of the sprite
 )(
     input  logic clk,           // clock
 
@@ -17,6 +18,28 @@ module sprite_access #(
     output logic sprite_pixel,  // the pixel for the current position
     input  logic sprite_visible // is the sprite currently visible for this position
 );
+    /*
+    The sprite is implemented as one shift-register to save resources.
+    If we were to render at the normal resolution of 800x600, we would 
+    simply shift the sprite by one when we need new pixel data.
+    However, since our internal resolution is 100x75, one sprite pixel
+    is actually 8x8 real pixels. This means that we need to access the
+    same sprite row for 8 rows in succession.
+    
+    One solution would be a bidirectional shift register, were you simply
+    shift the row back before accessing it again. This would drastically
+    increase resources since each flipflop would need another mux2 on its
+    data input.
+    
+    The approach used here is to use a temporary shift register.
+    When the first row of the 8x8 pixel needs to be drawn the row from
+    the sprite is loaded into a temporary shift register.
+    
+    This shift register is accessed whenever new pixel data is needed
+    and therefore repeats automatically for the remaining 7 of 8 rows.
+    Once a new row is needed, the row from the sprite is again loaded
+    into the temporary shift register.
+    */
 
     // Shift sprite data upon the start of a new 8x8 pixel line
     assign sprite_shift = sprite_visible && sprite_access && new_line;

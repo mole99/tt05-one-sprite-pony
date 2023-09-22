@@ -2,15 +2,30 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 `timescale 1ns/1ps
+`default_nettype none
+
+`define SPRITE_WIDTH 12
+`define SPRITE_HEIGHT 12
+
+/*
+    TODO checklist
+    
+    - VGA trigger vertical
+    - 10 MHz vs 40 MHz
+    - Metastability
+    - start position
+
+*/
 
 module top (
     input  logic clk,
     input  logic reset_n,
 
-    // SPI signals TODO
-    input  logic spi_clk,
-    input  logic spi_data,
-    // TODO spi_sel
+    // SPI signals
+    input  logic spi_sclk,
+    input  logic spi_mosi,
+    output logic spi_miso,
+    input  logic spi_cs,
 
     // SVGA signals
     output logic [5:0] rrggbb,
@@ -39,23 +54,55 @@ module top (
     localparam HTOTAL = WIDTH + HFRONT + HSYNC + HBACK;
     localparam VTOTAL = HEIGHT + VFRONT + VSYNC + VBACK;
     
+    // Downscaling by factor of 8, i.e. one pixel is 8x8
+    localparam WIDTH_SMALL  = WIDTH / 8;
+    localparam HEIGHT_SMALL = HEIGHT / 8;
+    
+    /*
+        Global Parameters
+    */
+    
+    localparam SPRITE_WIDTH = `SPRITE_WIDTH;
+    localparam SPRITE_HEIGHT = `SPRITE_HEIGHT;
+    
+    localparam bit [5:0] COLOR1_DEFAULT = 6'b110001;
+    localparam bit [5:0] COLOR2_DEFAULT = 6'b010101;
+    localparam bit [5:0] COLOR3_DEFAULT = 6'b001100;
+    localparam bit [5:0] COLOR4_DEFAULT = 6'b101100;
+    
+    localparam bit [1:0] BACKGROUND_DEFAULT         = 2'd2;
+    localparam bit       ENABLE_MOVEMENT_DEFAULT    = 1'b1;
+    localparam bit       ENABLE_SPRITE_BG_DEFAULT   = 1'b0;
+    localparam bit       REDUCED_FREQ_DEFAULT       = 1'b0;
+    
+    localparam bit [7:0] MISC_DEFAULT = {   3'b000,
+                                            REDUCED_FREQ_DEFAULT,
+                                            ENABLE_SPRITE_BG_DEFAULT,
+                                            ENABLE_MOVEMENT_DEFAULT,
+                                            BACKGROUND_DEFAULT
+                                        };
+
+    /*
+        Timing
+    */
+    
     logic signed [$clog2(HTOTAL) : 0] counter_h;
     logic signed [$clog2(VTOTAL) : 0] counter_v;
     
     logic hblank, vblank;
-
-    localparam logic [5:0] BACKGROUND_COLOR = 6'b010101;
      
     // Horizontal timing
     timing #(
         .RESOLUTION     (WIDTH),
         .FRONT_PORCH    (HFRONT),
         .SYNC_PULSE     (HSYNC),
-        .BACK_PORCH     (HBACK)
+        .BACK_PORCH     (HBACK),
+        .TOTAL          (HTOTAL)
     ) timing_hor (
         .clk        (clk),
         .enable     (1'b1),
         .reset_n    (reset_n),
+        .inc_1_or_4 (misc[4]),
         .sync       (hsync),
         .blank      (hblank),
         .next       (next_vertical),
@@ -67,41 +114,46 @@ module top (
         .RESOLUTION     (HEIGHT),
         .FRONT_PORCH    (VFRONT),
         .SYNC_PULSE     (VSYNC),
-        .BACK_PORCH     (VBACK)
+        .BACK_PORCH     (VBACK),
+        .TOTAL          (VTOTAL)
     ) timing_ver (
         .clk        (clk),
         .enable     (next_vertical),
         .reset_n    (reset_n),
+        .inc_1_or_4 (1'b0),
         .sync       (vsync),
         .blank      (vblank),
         .next       (next_frame),
         .counter    (counter_v)
     );
     
+    logic [7:0] cur_time;
+    logic time_dir;
+
+    always_ff @(posedge clk, negedge reset_n) begin
+        if (!reset_n) begin
+            cur_time <= '0;
+            time_dir <= '0;
+        end else begin
+            if (next_frame) begin
+                if (time_dir == 1'b0) begin
+                    cur_time <= cur_time + 1;
+                    if (cur_time == 255-1) begin
+                        time_dir <= 1'b1;
+                    end
+                end else begin
+                    cur_time <= cur_time - 1;
+                    if (cur_time == 0+1) begin
+                        time_dir <= 1'b0;
+                    end
+                end
+            end
+        end
+    end
+
     /*
-        Downscaling by factor of 8, i.e. one pixel is 8x8
+        Sprite Movement
     */
-
-    localparam WIDTH_SMALL    = WIDTH / 8;
-    localparam HEIGHT_SMALL   = HEIGHT / 8;
-
-    /*
-        Sprite drawing logic
-        
-        The sprite is implemented as one shift-register to save on resources.
-        If we were rendering at the normal resolution of 800x600, we would simply shift the sprite by one when we needed new pixel data.
-        However, since our internal resolution is 100x75, one sprite pixel is actually 8x8 real pixels.
-        This means that we need to access the same sprite data for 8 rows in a row.
-        
-        One solution would be to have a bidirectional shift register, where in 7 out of 8 rows we first shift the data back before reading the sprite data.
-        This would drastically increase resources since each flipflop would need a mux2 on its data input.
-        
-        The solution used here is to have the first row of the 8x8 pixel read the data from the sprite into a temporary shift register.
-        This shift register is shifted as loaded when new horizontal sprite data is needed, but repeats automatically for the remaining 7 of 8 rows.
-    */
-
-    localparam SPRITE_WIDTH = 10;
-    localparam SPRITE_HEIGHT = 10;
     
     logic [7:0] sprite_x;
     logic [7:0] sprite_y;
@@ -112,13 +164,19 @@ module top (
         .WIDTH_SMALL   (WIDTH_SMALL),
         .HEIGHT_SMALL  (HEIGHT_SMALL)
     ) sprite_movement_inst (
-        .clk        (clk),
-        .reset_n    (reset_n),
+        .clk            (clk),
+        .reset_n        (reset_n),
         
-        .next_frame (next_frame),
+        .enable_movement (misc[2]),
+        .next_frame     (next_frame),
         
-        .sprite_x   (sprite_x),
-        .sprite_y   (sprite_y)
+        .shift_x        (shift_x),
+        .data_in_x      (spi_mosi_sync),
+        .shift_y        (shift_y),
+        .data_in_y      (spi_mosi_sync),
+        
+        .sprite_x       (sprite_x),
+        .sprite_y       (sprite_y)
     );
     
     logic signed [$clog2(HTOTAL) - 3 : 0] counter_h_small;
@@ -135,6 +193,10 @@ module top (
     assign sprite_visible_v = counter_v_small >= sprite_y && counter_v_small < (sprite_y + SPRITE_HEIGHT);
     assign sprite_visible = sprite_visible_h && sprite_visible_v;
     
+    /*
+        Sprite Data
+    */
+    
     logic sprite_data;
     logic sprite_shift;
     
@@ -144,11 +206,15 @@ module top (
     ) sprite_data_inst (
         .clk        (clk),
         .reset_n    (reset_n),
-        .shiftf     (sprite_shift || spi_clk_edge),
+        .shiftf     (sprite_shift || spi_sprite_shift),
         .data_out   (sprite_data),
-        .data_in    (spi_data_sync),
-        .load       (spi_clk_edge)
+        .data_in    (spi_mosi_sync),
+        .load       (spi_sprite_mode)
     );
+    
+    /*
+        Sprite Access
+    */
     
     logic sprite_pixel;
     
@@ -168,14 +234,42 @@ module top (
     );
     
     /*
-        Colors
+        Background Color
+    */
+    
+    logic [5:0] bg_color;
+    
+    background #(
+        .HTOTAL (HTOTAL),
+        .VTOTAL (VTOTAL)
+    ) background_inst (
+        .bg_select  (misc[1:0]),
+        .cur_time   (cur_time),
+
+        .counter_h  (counter_h),
+        .counter_v  (counter_v),
+
+        .color1     (color1),
+        .color2     (color2),
+        .color3     (color3),
+        .color4     (color4),
+        
+        .color_out (bg_color)
+    );
+    
+    /*
+        Final Color Composition
     */
 
     always_comb begin
-        rrggbb = BACKGROUND_COLOR;
+        rrggbb = bg_color;
         
         if (sprite_pixel && sprite_visible) begin
-            rrggbb = 6'b111111;
+            rrggbb = color1;
+        end
+        
+        if (misc[3] && !sprite_pixel && sprite_visible) begin
+            rrggbb = color2;
         end
         
         if (hblank || vblank) begin
@@ -184,28 +278,60 @@ module top (
     end
     
     /*
-        SPI
+        SPI Receiver
+        
+        cpol       = False,
+        cpha       = True,
+        msb_first  = True,
+        word_width = 8,
+        cs_active_low = True
     */
     
-    // Synchronizer to prevent metastability
+    logic [5:0] color1;
+    logic [5:0] color2;
+    logic [5:0] color3;
+    logic [5:0] color4;
+    /* verilator lint_off UNUSEDSIGNAL */
+    logic [7:0] misc;
+    /* verilator lint_on UNUSEDSIGNAL */
     
-    logic [1:0] spi_data_ff;
+    logic spi_sprite_shift;
+    logic spi_sprite_mode;
+    logic spi_mosi_sync;
     
-    always_ff @(posedge clk) begin
-        spi_data_ff <= {spi_data_ff[0], spi_data};
-    end
+    logic shift_x;
+    logic shift_y;
     
-    logic spi_data_sync = spi_data_ff[1];
-    
-    // Detect edge
-    
-    logic spi_clk_delayed;
+    spi_receiver #(
+        .COLOR1_DEFAULT (COLOR1_DEFAULT),
+        .COLOR2_DEFAULT (COLOR2_DEFAULT),
+        .COLOR3_DEFAULT (COLOR3_DEFAULT),
+        .COLOR4_DEFAULT (COLOR4_DEFAULT),
+        .MISC_DEFAULT   (MISC_DEFAULT)
+    ) spi_receiver_inst (
+        .clk,
+        .reset_n,
 
-    always_ff @(posedge clk) begin
-        spi_clk_delayed <= spi_clk;
-    end
-    
-    logic spi_clk_edge;
-    assign spi_clk_edge = !spi_clk_delayed && spi_clk;
+        .spi_sclk,
+        .spi_mosi,
+        .spi_miso,
+        .spi_cs,
+        
+        .sprite_data,
+        
+        .spi_sprite_shift,
+        .spi_sprite_mode,
+        .spi_mosi_sync,
+        
+        .shift_x,
+        .shift_y,
+        
+        .color1,
+        .color2,
+        .color3,
+        .color4,
+        .misc
+    );
+
 
 endmodule

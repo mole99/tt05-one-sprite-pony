@@ -16,22 +16,24 @@ module tt_um_top_mole99 (
 );
 
     assign uio_oe = 8'b11111111;
-    assign uio_out[7:2] = 6'b000000;
+    assign uio_out[7:3] = 5'b00000;
 
     top top_inst (
         .clk        (clk),
         .reset_n    (rst_n && ena),
 
         // SPI signals
-        .spi_clk    (ui_in[0]),
-        .spi_data   (ui_in[1]),
+        .spi_sclk   (ui_in[0]),
+        .spi_mosi   (ui_in[1]),
+        .spi_miso   (uio_out[2]),
+        .spi_cs     (ui_in[2]),
 
         // SVGA signals
-        .rrggbb     (uo_out[7:2]),
-        .hsync      (uo_out[0]),
-        .vsync      (uo_out[1]),
+        .rrggbb         (uo_out[7:2]),
+        .hsync          (uo_out[0]),
+        .vsync          (uo_out[1]),
         .next_vertical  (uio_out[0]),
-        .next_frame (uio_out[1])
+        .next_frame     (uio_out[1])
     );
 
 endmodule

@@ -11,7 +11,10 @@ project:
     - sprite_access.sv
     - sprite_data.sv
     - sprite_movement.sv
+    - background.sv
     - timing.sv
+    - synchronizer.sv
+    - spi_receiver.sv
   top_module:  "tt_um_top_mole99"      # Put the name of your top module here, must start with "tt_um_". Make it unique by including your github username
 
 # How many tiles your design occupies? A single tile is about 167x108 uM.
@@ -35,7 +38,7 @@ documentation:
       A one-trick pony is someone or something that is good at doing only one thing. Accordingly, a one-sprite pony can display only one sprite and that's what this design does:
       
       This Verilog design will generate 800x600 60Hz SVGA output, internally the resolution is decreased to 100x75, thus one pixel is really 8x8 pixels.
-      The sprite is 10x10 pixel in size and upon startup is initialized to a pixelated version of the TinyTapeout logo.
+      The sprite is 12x12 pixel in size and upon startup is initialized to a pixelated version of the TinyTapeout logo.
 
 # Instructions on how someone could test your project, include things like what buttons do what and how to set the clock if needed
   how_to_test:  |

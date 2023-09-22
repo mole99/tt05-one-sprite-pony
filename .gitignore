@@ -8,3 +8,8 @@ src/__pycache__/
 src/__tinytapeout
 src/results.xml
 src/user_config.tcl
+*.vvp
+*.fst
+obj_dir/
+images/
+sim_build/

@@ -2,51 +2,72 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 `timescale 1ns/1ps
+`default_nettype none
 
 module sprite_data #(
-    parameter WIDTH,
-    parameter HEIGHT
+    parameter WIDTH,        // width of the sprite
+    parameter HEIGHT        // height of the sprite
 )(
-    input  logic clk,      // clock
-    input  logic reset_n,  // reset 
+    input  logic clk,       // clock
+    input  logic reset_n,   // reset active low
     input  logic shiftf,    // shift sprite data
-    output logic data_out,      // pixel data
-    input  logic load,
-    input  logic data_in
+    output logic data_out,  // output pixel data
+    input  logic load,      // load new sprite data
+    input  logic data_in    // new sprite data
 );
-
-    `define INIT_SPRITE
-
     logic [WIDTH*HEIGHT-1 : 0] sprite_data;
+    
+    /* clock gating - future enhancement */
 
+    /*
+    logic g_clk, enable_latch;
+
+    always_latch begin
+        if (~clk)
+            enable_latch <= shiftf;
+    end
+
+    assign g_clk = clk & enable_latch;
+    */
+    
+    // Decide if we just want to rotate the whole register
+    // or if we want to shift in/load new sprite data
+    logic new_sprite_data;
+    assign new_sprite_data = load ? data_in : sprite_data[0];
+
+    // Implement the shift register
     always_ff @(posedge clk, negedge reset_n) begin
         if (!reset_n) begin
 
-            `ifdef INIT_SPRITE
+            // By default all pixels are background
             sprite_data <= '0;
-            sprite_data[ 9: 0] <= 10'b0011111100;
-            sprite_data[19:10] <= 10'b0110000010;
-            sprite_data[29:20] <= 10'b1100111111;
-            sprite_data[39:30] <= 10'b1000001000;
-            sprite_data[49:40] <= 10'b1011111001;
-            sprite_data[59:50] <= 10'b1000101001;
-            sprite_data[69:60] <= 10'b1000101001;
-            sprite_data[79:70] <= 10'b1100100011;
-            sprite_data[89:80] <= 10'b0110100110;
-            sprite_data[99:90] <= 10'b0000111100;
-            
-            `endif
+
+            // Initialize the sprite data
+            // Basically the pixels of your sprite
+            // but flipped at the Y-axis
+
+            sprite_data[11 : 0  ] <= 12'b000111111000;
+            sprite_data[23 : 12 ] <= 12'b001000000100;
+            sprite_data[35 : 24 ] <= 12'b010001111110;
+            sprite_data[47 : 36 ] <= 12'b100001111111;
+            sprite_data[59 : 48 ] <= 12'b100000011000;
+            sprite_data[71 : 60 ] <= 12'b101111111001;
+            sprite_data[83 : 72 ] <= 12'b101111111001;
+            sprite_data[95 : 84 ] <= 12'b100011011001;
+            sprite_data[107: 96 ] <= 12'b100011011001;
+            sprite_data[119: 108] <= 12'b010011000010;
+            sprite_data[131: 120] <= 12'b001011000100;
+            sprite_data[143: 132] <= 12'b000011111000;
+
         end else begin
             if (shiftf) begin
-                if (!load) begin
-                    sprite_data <= {sprite_data[0], sprite_data[WIDTH*HEIGHT-1:1]};
-                end else begin
-                    sprite_data <= {data_in, sprite_data[WIDTH*HEIGHT-1:1]};
-                end
+                // Shift the whole sprite
+                sprite_data <= {new_sprite_data, sprite_data[WIDTH*HEIGHT-1:1]};
             end
         end
     end
     
+    // Data for the current pixel is the LSB
     assign data_out = sprite_data[0];
 
 endmodule
