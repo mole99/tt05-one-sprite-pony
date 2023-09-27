@@ -42,7 +42,7 @@ module background #(
     assign color_sel2 = tmp2[6:5];
     
     
-    logic color_sel;
+    logic [1:0] color_sel;
     assign color_sel = bg_select[0] ? color_sel2 : color_sel1;
     
     logic [5:0] tmp_color;

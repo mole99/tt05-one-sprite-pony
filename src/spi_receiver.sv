@@ -148,7 +148,7 @@ module spi_receiver #(
                         spi_cmd_color3: color3 <= {color3[4:0], spi_mosi_sync};
                         spi_cmd_color4: color4 <= {color4[4:0], spi_mosi_sync};
                         spi_cmd_sprite_data: first_data_sprite <= 1'b1;
-                        spi_cmd_misc: misc <= {misc[6:0], spi_mosi_sync};
+                        spi_cmd_misc: misc <= {misc[3:0], spi_mosi_sync};
                     endcase
                     
                     spi_cnt <= spi_cnt + 1;
@@ -168,7 +168,7 @@ module spi_receiver #(
                         spi_cmd_color3: spi_miso <= color3[5];
                         spi_cmd_color4: spi_miso <= color4[5];
                         spi_cmd_sprite_data: spi_miso <= sprite_data;
-                        spi_cmd_misc: spi_miso <= misc[7];
+                        spi_cmd_misc: spi_miso <= misc[4];
                     endcase
                 end
             end

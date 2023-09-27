@@ -318,9 +318,7 @@ module top (
     logic [5:0] color2;
     logic [5:0] color3;
     logic [5:0] color4;
-    /* verilator lint_off UNUSEDSIGNAL */
-    logic [7:0] misc;
-    /* verilator lint_on UNUSEDSIGNAL */
+    logic [4:0] misc;
     
     logic spi_sprite_shift;
     logic spi_sprite_mode;
