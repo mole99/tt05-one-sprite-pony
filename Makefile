@@ -26,7 +26,7 @@ openlane: $(RTL)
 sprites:
 	python3 sprite2bit.py
 
-animation.gif:
+animation.gif: images/
 	convert -delay 1.666 -loop 0 images/*.png animation.gif
 
 clean:
