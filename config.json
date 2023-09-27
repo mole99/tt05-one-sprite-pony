@@ -11,7 +11,7 @@
     "RIGHT_MARGIN_MULT": 6,
     "pdk::sky130A": {
         "MAX_FANOUT_CONSTRAINT": 6,
-        "PL_TARGET_DENSITY_PCT": 90,
+        "PL_TARGET_DENSITY_PCT": 88,
         "scl::sky130_fd_sc_hd": {
             "CLOCK_PERIOD": 15
         }

@@ -33,7 +33,7 @@ module spi_receiver #(
     output logic [5:0] color2,      // color2 register
     output logic [5:0] color3,      // color3 register
     output logic [5:0] color4,      // color4 register
-    output logic [7:0] misc         // miscellaneous register
+    output logic [4:0] misc         // miscellaneous register
 );
     
     // Synchronizer to prevent metastability

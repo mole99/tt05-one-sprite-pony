@@ -41,6 +41,21 @@ module background #(
     
     assign color_sel2 = tmp2[6:5];
     
+    
+    logic color_sel;
+    assign color_sel = bg_select[0] ? color_sel2 : color_sel1;
+    
+    logic [5:0] tmp_color;
+    
+    always_comb begin
+        case (color_sel)
+            2'b00: tmp_color = color1;
+            2'b01: tmp_color = color2;
+            2'b10: tmp_color = color3;
+            2'b11: tmp_color = color4;
+        endcase
+    end
+    
     always_comb begin
         case (bg_select)
             2'b00:
@@ -48,20 +63,9 @@ module background #(
             2'b01:
                 color_out = (counter_h[7:2] ^ counter_v[7:2]) + cur_time[7:2];
             2'b10:
-                case (color_sel1)
-                    2'b00: color_out = color1;
-                    2'b01: color_out = color2;
-                    2'b10: color_out = color3;
-                    2'b11: color_out = color4;
-                endcase
+                color_out = tmp_color;
             2'b11:
-                case (color_sel2)
-                    2'b00: color_out = color1;
-                    2'b01: color_out = color2;
-                    2'b10: color_out = color3;
-                    2'b11: color_out = color4;
-                endcase
-        
+                color_out = tmp_color;
         endcase
     end
 
