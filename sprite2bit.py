@@ -10,6 +10,9 @@ for image_filename in glob.glob("sprites/*.png"):
 
     width, height = img.size
 
+    sprite_verilog = ""
+    sprite_python = "SPRITE = [\n"
+
     for y in range(height):
         pixel_row = ''
         for x in range(width):
@@ -18,4 +21,13 @@ for image_filename in glob.glob("sprites/*.png"):
             else:
                 pixel_row += '1'
                     
-        print(f"sprite_data[{width*(y+1)-1: <3}: {width*y: <3}] <= {width}'b{pixel_row[::-1]};")
+        sprite_verilog += f"sprite_data[{width*(y+1)-1: <3}: {width*y: <3}] <= {width}'b{pixel_row[::-1]};\n"
+        sprite_python += f"    [{ ','.join(pixel_row) }],\n"
+    
+    sprite_python += "]"
+    
+    print("Sprite data Verilog:\n")
+    print(sprite_verilog)
+    
+    print("Sprite data Python:\n")
+    print(sprite_python)
