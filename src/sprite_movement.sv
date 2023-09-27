@@ -27,6 +27,7 @@ module sprite_movement #(
 
     logic sprite_x_dir;
     logic sprite_y_dir;
+    logic divider; // half movement speed by two
     
     // Sprite movement logic
     always_ff @(posedge clk, negedge reset_n) begin
@@ -35,9 +36,14 @@ module sprite_movement #(
             sprite_y <= '0;
             sprite_x_dir <= '0;
             sprite_y_dir <= '0;
+            divider <= '0;
         end else begin
+            if (next_frame) begin
+                divider <= !divider;
+            end
+        
             // Move the sprite to current direction
-            if (enable_movement && next_frame) begin
+            if (enable_movement && divider && next_frame) begin
                 if (sprite_x_dir == 1'b0) begin
                     sprite_x <= sprite_x + 1;
                     

@@ -13,7 +13,7 @@
     - VGA trigger vertical
     - 10 MHz vs 40 MHz
     - Metastability
-    - start position
+    - X/Y start position
 
 */
 
@@ -90,6 +90,20 @@ module top (
     logic signed [$clog2(VTOTAL) : 0] counter_v;
     
     logic hblank, vblank;
+
+    logic inc_1_or_4;
+
+    always_ff @(posedge clk, negedge reset_n) begin
+        if (!reset_n) begin
+            inc_1_or_4 <= REDUCED_FREQ_DEFAULT;
+        end else begin
+            // Only ever assign at next_frame
+            // to prevent glitches
+            if (next_frame) begin
+                inc_1_or_4 <= misc[4];
+            end
+        end
+    end
      
     // Horizontal timing
     timing #(
@@ -102,7 +116,7 @@ module top (
         .clk        (clk),
         .enable     (1'b1),
         .reset_n    (reset_n),
-        .inc_1_or_4 (misc[4]),
+        .inc_1_or_4 (inc_1_or_4),
         .sync       (hsync),
         .blank      (hblank),
         .next       (next_vertical),
@@ -239,11 +253,25 @@ module top (
     
     logic [5:0] bg_color;
     
+    logic [1:0] bg_sel;
+
+    always_ff @(posedge clk, negedge reset_n) begin
+        if (!reset_n) begin
+            bg_sel <= BACKGROUND_DEFAULT;
+        end else begin
+            // Only ever assign at next_frame
+            // to prevent glitches
+            if (next_vertical && counter_v[2:0] == 3'b111) begin
+                bg_sel <= misc[1:0];
+            end
+        end
+    end
+    
     background #(
         .HTOTAL (HTOTAL),
         .VTOTAL (VTOTAL)
     ) background_inst (
-        .bg_select  (misc[1:0]),
+        .bg_select  (bg_sel),
         .cur_time   (cur_time),
 
         .counter_h  (counter_h),
