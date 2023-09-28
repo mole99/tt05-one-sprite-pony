@@ -7,20 +7,24 @@ A one-trick pony is someone or something that is good at doing only one thing. A
 ![animation.gif](animation.gif)
 
 This Verilog design produces SVGA 800x600 60Hz output with a background and one sprite. Internally, the resolution is reduced to 100x75, thus one pixel of the sprite is actually 8x8 pixels.
+The design can operate at either a 40 MHz pixel clock or a 10 MHz pixel clock by setting a configuration bit.
 
 The sprite is 12x12 pixel in size and is initialized at startup with a pixelated version of the TinyTapeout logo.
 
-This design targets 1 Tile of [TinyTapeout 5](https://tinytapeout.com).
+An SPI receiver accepts various commands, e.g. to replace the sprite data, change the colors or set the background.
 
-The goal is pixel perfect rendering. To achieve this goal, I created regression tests in cocotb, that compare the output image to a software rendering.
+This design targets 1 tile of [TinyTapeout 5](https://tinytapeout.com).
+
+The goal is pixel perfect rendering. To achieve this goal, I created a regression test in cocotb, that compares the output image to a software rendering.
 
 ## Capabilities
 
 - SVGA 800x600 60Hz output with 2 bits per color (internally reduced to 100x75)
-- 40 MHz or 10 MHz operation TODO
+- 40 MHz or 10 MHz operation depending on configuration
 - Sprite with 12x12 pixels
 	- foreground and background color
-- 4 different colors
+	- background can be set transparent
+- 4 different colors (6 bit rrggbb)
 - 4 different backgrounds
 	- Solid color
 	- Funky
@@ -31,6 +35,7 @@ The goal is pixel perfect rendering. To achieve this goal, I created regression 
 	- Set colors (1-4)
 	- Set background (4 types)
 	- Set sprite x/y position
+	- Set miscellaneous options
 
 |   |   |
 |---|---|
@@ -43,14 +48,14 @@ Register Map
 
 | Addr Hex | Name | Type | Reset Value | Description |
 |----------|------|------|-------------|-------------|
-| 0x00     | SPRITE_DATA | R/W | TinyTapeout Logo | Stores the data for the sprite, you can contionously read/write it by keeping CS asserted |
-| 0x01     | COLOR1     | R/W     | TODO            | 6 bit color in format RRGGBB used as sprite foreground            |
-| 0x02     | COLOR2     | R/W     | TODO            | 6 bit color in format RRGGBB used as sprite background            |
-| 0x03     | COLOR3     | R/W     | TODO            | 6 bit color in format RRGGBB used as solid color background           |
-| 0x04     | COLOR4     | R/W     | TODO            | 6 bit color in format RRGGBB            |
-| 0x05     | SPRITE_X     | R/W     | TODO            | 6 bit x position of the sprite            |
-| 0x06     | SPRITE_Y     | R/W     | TODO            | 6 bit y position of the sprite            |
-| 0x07     | MISC     | R/W     | TODO            | Various Settings, see below            |
+| 0x00     | SPRITE_DATA | R/W | TinyTapeout logo | Stores the data for the sprite, you can continuously read/write it by keeping CS asserted |
+| 0x01     | COLOR1     | R/W     | 6'b110001            | 6 bit color in format RRGGBB used as sprite foreground            |
+| 0x02     | COLOR2     | R/W     | 6'b010101            | 6 bit color in format RRGGBB used as sprite background            |
+| 0x03     | COLOR3     | R/W     | 6'b001100            | 6 bit color in format RRGGBB used as solid color background           |
+| 0x04     | COLOR4     | R/W     | 6'b101100            | 6 bit color in format RRGGBB            |
+| 0x05     | SPRITE_X     | R/W     | 6'b000000            | 6 bit x position of the sprite            |
+| 0x06     | SPRITE_Y     | R/W     | 6'b000000            | 6 bit y position of the sprite            |
+| 0x07     | MISC     | R/W     | 5'b00110            | Various Settings, see below            |
 
 Details for MISC Register:
 
@@ -59,29 +64,38 @@ Details for MISC Register:
 	- 01: Funky
 	- 10: Diagonal Stripes
 	- 11: Horizontal Stripes
-	New background type is only assigned at hsync to prevent glitching
+
+	New background type is assigned at hsync to prevent glitching
 - Bit 2: Enable movement of the sprite
 - Bit 3: Enable sprite background (transparency)
-- Bit 4: Enable reduced frequency mode (10 MHz operation) TODO
-- Bits 7:5: TODO
+- Bit 4: Enable reduced frequency mode (10 MHz operation)
+	This option is assigned at a new frame to prevent glitching
 
-Attention when reading registers that provide less than 8 bits, e.g. all colors and x/y position. The last 2 bits read will be the first two bits shifted in. This means you need to shift the received data by >>2 before using it.
+Backgrounds:
+
+- Background type 1 uses COLOR3 as solid color.
+- Background type 2 calculates the color based on the screen coordinates.
+- Background types 3 to 4 (stripes) use all four colors for the stripes.
+
+For background types 2 to 4, the current time is used to vary the background.
+
+Attention when reading registers that provide less than 8 bits, e.g. for all colors and x/y position (6 bits). The last 2 bits that are read will be the first two bits shifted in. This means you need to shift the received data by >>2 before using it.
 
 ## Creating your own sprites
 
-TODO
+A small Python script reads in the sprites under `sprites/` and displays the data ready to be used for both Verilog and Python.
+
+Just run `make sprites`.
 
 ## Creating your own gif
 
-TODO
+Run the verilator simulation via `make sim-verilator`. The folder `images` will be populated with the individual frames.
+
+You can then use imagemagicks `convert` to create a gif via: `make animation.gif`
 
 ## Verification
 
-TODO
-
-## Hardening
-
-TODO
+To run the regression tests, use `make sim-cocotb`. The resulting images can be found under `sim_build`.
 
 ## Tips and Tricks
 
@@ -109,4 +123,4 @@ With some imagination One Sprite Pony can become so much more:
 
 2. RAM (read and write sprite data and registers)
 
-3. hand warmer? (the design has a density of 90%, but since all other designs are disabled at the same time, the chip will probably not warm up ;) )
+3. hand warmer? (the design has a density of ~90%, but since all other designs are disabled at the same time, the chip will probably not warm up ;) )

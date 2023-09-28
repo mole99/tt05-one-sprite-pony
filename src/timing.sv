@@ -22,7 +22,10 @@ module timing #(
 );
 
     // Signal to trigger next counter in the chain
-    assign next = counter == RESOLUTION - 1 && enable;
+    assign next = counter >= RESOLUTION - 1 && enable;
+
+    assign sync  = (counter >= -SYNC_PULSE - BACK_PORCH) && (counter < -BACK_PORCH);
+    assign blank = (counter >= -FRONT_PORCH - SYNC_PULSE - BACK_PORCH) && (counter < 0);
 
     // Counter logic
     always_ff @(posedge clk, negedge reset_n) begin
@@ -41,8 +44,5 @@ module timing #(
             end
         end
     end
-    
-    assign sync = counter >= -SYNC_PULSE - BACK_PORCH && counter < -BACK_PORCH;
-    assign blank = counter >= -FRONT_PORCH - SYNC_PULSE - BACK_PORCH && counter < 0;
 
 endmodule

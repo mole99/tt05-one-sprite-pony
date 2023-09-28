@@ -114,29 +114,33 @@ int main(int argc, char **argv) {
         // simulate for 20000 clocks
         for (int i = 0; i < 20000; ++i) {
 
-            top->clk = 0;
-            top->eval();
-            top->clk = 1;
-            top->eval();
-
-            /* TODO
             static int cnt = 0;
-            
-            if (cnt++ == 4)
+
+            //std::cout << cnt << std::endl;
+
+            // This is for inc by 4 mode
+            if (cnt==0 || 1)
             {
-              cnt = 0;
               top->clk = 0;
               top->eval();
               top->clk = 1;
               top->eval();
-            }*/
+            }
+            
+            if (cnt++ == 3)
+            {
+              cnt = 0;
+            }
+
 
             if (top->hsync) {
                 hnum = -HBACK - 1;
+                //std::cout << "hsync" << std::endl;
             }
 
             if (top->vsync) {
                 vnum = -VBACK - 1;
+                //std::cout << "vsync" << std::endl;
             }
 
             // active frame

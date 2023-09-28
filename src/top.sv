@@ -198,6 +198,10 @@ module top (
     assign counter_h_small = counter_h[$clog2(HTOTAL) : 3];
     assign counter_v_small = counter_v[$clog2(VTOTAL) : 3];
 
+    /*
+        Sprite Visibility
+    */
+
     logic sprite_visible_v;
     logic sprite_visible_h;
     logic sprite_visible;
@@ -230,14 +234,19 @@ module top (
     */
     
     logic sprite_pixel;
+    logic start_big_line;
+    logic end_big_pixel;
+    
+    assign start_big_line = counter_v[2:0] == 3'b000;
+    assign end_big_pixel   = (inc_1_or_4 == 1'b0) ? counter_h[2:0] == 3'b111 : counter_h[2] == 1'b1;
     
     sprite_access #(
         .WIDTH  (SPRITE_WIDTH)
     ) sprite_access_inst (
         .clk        (clk),
 
-        .new_line       (counter_v[2:0] == 3'b000),
-        .sprite_access  (counter_h[2:0] == 3'b111),
+        .new_line       (start_big_line),
+        .sprite_access  (end_big_pixel),
         
         .sprite_data    (sprite_data),
         .sprite_shift   (sprite_shift),
