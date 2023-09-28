@@ -12,7 +12,7 @@ from cocotb.runner import get_runner
 from cocotb.triggers import Timer, RisingEdge, FallingEdge
 from cocotb.types import LogicArray
 
-from cocotbext.spi import SpiSignals, SpiConfig, SpiMaster
+from cocotbext.spi import SpiBus, SpiConfig, SpiMaster
 
 # Parameters
 WIDTH    = 800;
@@ -234,6 +234,23 @@ async def spi_send_cmd(dut, spi_master, cmd, data):
 
     return read_bytes
 
+# Send cmd and payload over SPI
+async def spi_send_sprite(dut, spi_master, cmd, data):
+    print(f'CMD: {cmd} DATA: {data}')
+    spi_master.write_nowait(cmd)
+    await spi_master.wait()
+    await spi_master.read()
+
+    spi_master.write_nowait(data, burst = True)
+    await spi_master.wait()
+    read_bytes = await spi_master.read()
+    
+    await RisingEdge(dut.clk)
+    await FallingEdge(dut.clk)
+    await RisingEdge(dut.clk)
+
+    return read_bytes
+
 @cocotb.test()
 async def simple_test(dut):
     """This test sends commands to the design via SPI and
@@ -256,14 +273,8 @@ async def simple_test(dut):
     c = Clock(dut.clk, 10, 'ns')
     await cocotb.start(c.start())
 
-    spi_signals = SpiSignals(
-        sclk = dut.spi_sclk,     # required
-        mosi = dut.spi_mosi,     # required
-        miso = dut.spi_miso,     # required
-        cs   = dut.spi_cs,       # required
-        cs_active_low = True     # optional (assumed True)
-    )
-    
+    spi_bus = SpiBus.from_prefix(dut, "spi")
+
     spi_config = SpiConfig(
         word_width = 8,
         sclk_freq  = 2e6,
@@ -272,7 +283,7 @@ async def simple_test(dut):
         msb_first  = True,
     )
 
-    spi_master = SpiMaster(spi_signals, spi_config)
+    spi_master = SpiMaster(spi_bus, spi_config)
 
     # Execution will block until reset_dut has completed
     await reset_dut(dut.reset_n, 50)
@@ -327,14 +338,8 @@ async def create_images(dut):
     c = Clock(dut.clk, 10, 'ns')
     await cocotb.start(c.start())
 
-    spi_signals = SpiSignals(
-        sclk = dut.spi_sclk,     # required
-        mosi = dut.spi_mosi,     # required
-        miso = dut.spi_miso,     # required
-        cs   = dut.spi_cs,       # required
-        cs_active_low = True     # optional (assumed True)
-    )
-    
+    spi_bus = SpiBus.from_prefix(dut, "spi")
+
     spi_config = SpiConfig(
         word_width = 8,
         sclk_freq  = 2e6,
@@ -343,7 +348,7 @@ async def create_images(dut):
         msb_first  = True,
     )
 
-    spi_master = SpiMaster(spi_signals, spi_config)
+    spi_master = SpiMaster(spi_bus, spi_config)
 
     # Execution will block until reset_dut has completed
     await reset_dut(dut.reset_n, 50)
@@ -378,7 +383,7 @@ async def create_images(dut):
     await spi_send_cmd(dut, spi_master, [CMD_SPRITE_X], [SPRITE_X])
     await spi_send_cmd(dut, spi_master, [CMD_SPRITE_Y], [SPRITE_Y])
     SPRITE = SPRITE_HEART
-    await spi_send_cmd(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE))
+    await spi_send_sprite(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE))
     COLOR1 = 0x30 # Red
     COLOR3 = 0x2A # Light Gray
     await spi_send_cmd(dut, spi_master, [CMD_COLOR1], [COLOR1])
@@ -401,7 +406,7 @@ async def create_images(dut):
     await spi_send_cmd(dut, spi_master, [CMD_SPRITE_X], [SPRITE_X])
     await spi_send_cmd(dut, spi_master, [CMD_SPRITE_Y], [SPRITE_Y])
     SPRITE = SPRITE_DRINK
-    await spi_send_cmd(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE))
+    await spi_send_sprite(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE))
     COLOR1 = 0x1F
     COLOR3 = 0x30
     await spi_send_cmd(dut, spi_master, [CMD_COLOR1], [COLOR1])
@@ -425,7 +430,7 @@ async def create_images(dut):
     await spi_send_cmd(dut, spi_master, [CMD_SPRITE_X], [SPRITE_X])
     await spi_send_cmd(dut, spi_master, [CMD_SPRITE_Y], [SPRITE_Y])
     SPRITE = SPRITE_SPIRAL
-    await spi_send_cmd(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE))
+    await spi_send_sprite(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE))
     COLOR1 = 0x33
     COLOR3 = 0x0A
     await spi_send_cmd(dut, spi_master, [CMD_COLOR1], [COLOR1])
@@ -463,14 +468,8 @@ async def draw_multiple_sprites(dut):
     c = Clock(dut.clk, 10, 'ns')
     await cocotb.start(c.start())
 
-    spi_signals = SpiSignals(
-        sclk = dut.spi_sclk,     # required
-        mosi = dut.spi_mosi,     # required
-        miso = dut.spi_miso,     # required
-        cs   = dut.spi_cs,       # required
-        cs_active_low = True     # optional (assumed True)
-    )
-    
+    spi_bus = SpiBus.from_prefix(dut, "spi")
+
     spi_config = SpiConfig(
         word_width = 8,
         sclk_freq  = 2e6,
@@ -479,7 +478,7 @@ async def draw_multiple_sprites(dut):
         msb_first  = True,
     )
 
-    spi_master = SpiMaster(spi_signals, spi_config)
+    spi_master = SpiMaster(spi_bus, spi_config)
 
     # Execution will block until reset_dut has completed
     await reset_dut(dut.reset_n, 50)
@@ -582,14 +581,8 @@ async def draw_different_sprites(dut):
     c = Clock(dut.clk, 10, 'ns')
     await cocotb.start(c.start())
 
-    spi_signals = SpiSignals(
-        sclk = dut.spi_sclk,     # required
-        mosi = dut.spi_mosi,     # required
-        miso = dut.spi_miso,     # required
-        cs   = dut.spi_cs,       # required
-        cs_active_low = True     # optional (assumed True)
-    )
-    
+    spi_bus = SpiBus.from_prefix(dut, "spi")
+
     spi_config = SpiConfig(
         word_width = 8,
         sclk_freq  = 2e6,
@@ -598,7 +591,7 @@ async def draw_different_sprites(dut):
         msb_first  = True,
     )
 
-    spi_master = SpiMaster(spi_signals, spi_config)
+    spi_master = SpiMaster(spi_bus, spi_config)
 
     # Execution will block until reset_dut has completed
     await reset_dut(dut.reset_n, 50)
@@ -628,7 +621,7 @@ async def draw_different_sprites(dut):
         await FallingEdge(dut.hsync)
 
     SPRITE = SPRITE_SPIRAL
-    await spi_send_cmd(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE))
+    await spi_send_sprite(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE))
 
     for i in range (15*8):
         await FallingEdge(dut.hsync)
@@ -645,7 +638,7 @@ async def draw_different_sprites(dut):
         await FallingEdge(dut.hsync)
 
     SPRITE = SPRITE_DRINK
-    await spi_send_cmd(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE))
+    await spi_send_sprite(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE))
 
     for i in range (15*8):
         await FallingEdge(dut.hsync)
@@ -663,7 +656,7 @@ async def draw_different_sprites(dut):
 
 def test_runner():
     hdl_toplevel_lang = os.getenv("HDL_TOPLEVEL_LANG", "verilog")
-    sim = os.getenv("SIM", "verilator") # "verilator" "icarus"
+    sim = os.getenv("SIM", "icarus") # "verilator" "icarus"
 
     proj_path = Path(__file__).resolve().parent
 
@@ -680,7 +673,7 @@ def test_runner():
     runner.build(
         verilog_sources=verilog_sources,
         defines=[("COCOTB", 1)],
-        build_args=["--trace-fst", "--trace-structs"],
+        build_args=[],#["--trace-fst", "--trace-structs"],
         hdl_toplevel="top",
         always=True,
     )

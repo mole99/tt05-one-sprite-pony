@@ -9,11 +9,11 @@ A one-trick pony is someone or something that is good at doing only one thing. A
 This Verilog design produces SVGA 800x600 60Hz output with a background and one sprite. Internally, the resolution is reduced to 100x75, thus one pixel of the sprite is actually 8x8 pixels.
 The design can operate at either a 40 MHz pixel clock or a 10 MHz pixel clock by setting a configuration bit.
 
-The sprite is 12x12 pixel in size and is initialized at startup with a pixelated version of the TinyTapeout logo.
+The sprite is 12x12 pixel in size and is initialized at startup with a pixelated version of the Tiny Tapeout logo.
 
 An SPI receiver accepts various commands, e.g. to replace the sprite data, change the colors or set the background.
 
-This design targets 1 tile of [TinyTapeout 5](https://tinytapeout.com).
+This design targets 1 tile of [Tiny Tapeout 5](https://tinytapeout.com).
 
 The goal is pixel perfect rendering. To achieve this goal, I created a regression test in cocotb, that compares the output image to a software rendering.
 
@@ -48,7 +48,7 @@ Register Map
 
 | Addr Hex | Name | Type | Reset Value | Description |
 |----------|------|------|-------------|-------------|
-| 0x00     | SPRITE_DATA | R/W | TinyTapeout logo | Stores the data for the sprite, you can continuously read/write it by keeping CS asserted |
+| 0x00     | SPRITE_DATA | R/W | Tiny Tapeout logo | Stores the data for the sprite, you can continuously read/write it by keeping CS asserted |
 | 0x01     | COLOR1     | R/W     | 6'b110001            | 6 bit color in format RRGGBB used as sprite foreground            |
 | 0x02     | COLOR2     | R/W     | 6'b010101            | 6 bit color in format RRGGBB used as sprite background            |
 | 0x03     | COLOR3     | R/W     | 6'b001100            | 6 bit color in format RRGGBB used as solid color background           |

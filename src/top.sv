@@ -343,28 +343,28 @@ module top (
         .COLOR4_DEFAULT (COLOR4_DEFAULT),
         .MISC_DEFAULT   (MISC_DEFAULT)
     ) spi_receiver_inst (
-        .clk,
-        .reset_n,
+        .clk        (clk), 
+        .reset_n    (reset_n),
 
-        .spi_sclk,
-        .spi_mosi,
-        .spi_miso,
-        .spi_cs,
+        .spi_sclk   (spi_sclk),
+        .spi_mosi   (spi_mosi),
+        .spi_miso   (spi_miso),
+        .spi_cs     (spi_cs),
         
-        .sprite_data,
+        .sprite_data        (sprite_data),
         
-        .spi_sprite_shift,
-        .spi_sprite_mode,
-        .spi_mosi_sync,
+        .spi_sprite_shift   (spi_sprite_shift),
+        .spi_sprite_mode    (spi_sprite_mode),
+        .spi_mosi_sync      (spi_mosi_sync),
         
-        .shift_x,
-        .shift_y,
+        .shift_x    (shift_x),
+        .shift_y    (shift_y),
         
-        .color1,
-        .color2,
-        .color3,
-        .color4,
-        .misc
+        .color1     (color1),
+        .color2     (color2),
+        .color3     (color3),
+        .color4     (color4),
+        .misc       (misc)
     );
 
 
