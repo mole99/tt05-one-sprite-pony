@@ -218,38 +218,10 @@ def draw_frame_software():
     return image
 
 # Send cmd and payload over SPI
-async def spi_send_cmd(dut, spi_master, cmd, data):
+async def spi_send_cmd(dut, spi_master, cmd, data, burst=False):
     print(f'CMD: {cmd} DATA: {data}')
-    spi_master.write_nowait(cmd)
-    await spi_master.wait()
-    await spi_master.read()
-
-    spi_master.write_nowait(data)
-    await spi_master.wait()
-    read_bytes = await spi_master.read()
-    
-    await RisingEdge(dut.clk)
-    await FallingEdge(dut.clk)
-    await RisingEdge(dut.clk)
-
-    return read_bytes
-
-# Send cmd and payload over SPI
-async def spi_send_sprite(dut, spi_master, cmd, data):
-    print(f'CMD: {cmd} DATA: {data}')
-    spi_master.write_nowait(cmd)
-    await spi_master.wait()
-    await spi_master.read()
-
-    spi_master.write_nowait(data, burst = True)
-    await spi_master.wait()
-    read_bytes = await spi_master.read()
-    
-    await RisingEdge(dut.clk)
-    await FallingEdge(dut.clk)
-    await RisingEdge(dut.clk)
-
-    return read_bytes
+    await spi_master.write(cmd)
+    await spi_master.write(data, burst=burst)
 
 @cocotb.test()
 async def simple_test(dut):
@@ -281,6 +253,7 @@ async def simple_test(dut):
         cpol       = False,
         cpha       = True,
         msb_first  = True,
+        frame_spacing_ns = 500
     )
 
     spi_master = SpiMaster(spi_bus, spi_config)
@@ -346,6 +319,7 @@ async def create_images(dut):
         cpol       = False,
         cpha       = True,
         msb_first  = True,
+        frame_spacing_ns = 500
     )
 
     spi_master = SpiMaster(spi_bus, spi_config)
@@ -383,7 +357,7 @@ async def create_images(dut):
     await spi_send_cmd(dut, spi_master, [CMD_SPRITE_X], [SPRITE_X])
     await spi_send_cmd(dut, spi_master, [CMD_SPRITE_Y], [SPRITE_Y])
     SPRITE = SPRITE_HEART
-    await spi_send_sprite(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE))
+    await spi_send_cmd(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE), burst=True)
     COLOR1 = 0x30 # Red
     COLOR3 = 0x2A # Light Gray
     await spi_send_cmd(dut, spi_master, [CMD_COLOR1], [COLOR1])
@@ -406,7 +380,7 @@ async def create_images(dut):
     await spi_send_cmd(dut, spi_master, [CMD_SPRITE_X], [SPRITE_X])
     await spi_send_cmd(dut, spi_master, [CMD_SPRITE_Y], [SPRITE_Y])
     SPRITE = SPRITE_DRINK
-    await spi_send_sprite(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE))
+    await spi_send_cmd(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE), burst=True)
     COLOR1 = 0x1F
     COLOR3 = 0x30
     await spi_send_cmd(dut, spi_master, [CMD_COLOR1], [COLOR1])
@@ -430,7 +404,7 @@ async def create_images(dut):
     await spi_send_cmd(dut, spi_master, [CMD_SPRITE_X], [SPRITE_X])
     await spi_send_cmd(dut, spi_master, [CMD_SPRITE_Y], [SPRITE_Y])
     SPRITE = SPRITE_SPIRAL
-    await spi_send_sprite(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE))
+    await spi_send_cmd(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE), burst=True)
     COLOR1 = 0x33
     COLOR3 = 0x0A
     await spi_send_cmd(dut, spi_master, [CMD_COLOR1], [COLOR1])
@@ -476,6 +450,7 @@ async def draw_multiple_sprites(dut):
         cpol       = False,
         cpha       = True,
         msb_first  = True,
+        frame_spacing_ns = 500
     )
 
     spi_master = SpiMaster(spi_bus, spi_config)
@@ -589,6 +564,7 @@ async def draw_different_sprites(dut):
         cpol       = False,
         cpha       = True,
         msb_first  = True,
+        frame_spacing_ns = 500
     )
 
     spi_master = SpiMaster(spi_bus, spi_config)
@@ -621,7 +597,7 @@ async def draw_different_sprites(dut):
         await FallingEdge(dut.hsync)
 
     SPRITE = SPRITE_SPIRAL
-    await spi_send_sprite(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE))
+    await spi_send_cmd(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE), burst=True)
 
     for i in range (15*8):
         await FallingEdge(dut.hsync)
@@ -638,7 +614,7 @@ async def draw_different_sprites(dut):
         await FallingEdge(dut.hsync)
 
     SPRITE = SPRITE_DRINK
-    await spi_send_sprite(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE))
+    await spi_send_cmd(dut, spi_master, [CMD_SPRITE_DATA], sprite2bytes(SPRITE), burst=True)
 
     for i in range (15*8):
         await FallingEdge(dut.hsync)
