@@ -44,6 +44,14 @@ The goal is pixel perfect rendering. To achieve this goal, I created a regressio
 
 ## SPI Register
 
+SPI Settings
+
+	CPOL       = 0
+	CPHA       = 1
+	word width = 8
+	MSB first
+	CS is active low
+
 Register Map
 
 | Addr Hex | Name | Type | Reset Value | Description |
@@ -79,15 +87,46 @@ Backgrounds:
 
 For background types 2 to 4, the current time is used to vary the background.
 
-Attention when reading registers that provide less than 8 bits, e.g. for all colors and x/y position (6 bits). The last 2 bits that are read will be the first two bits shifted in. This means you need to shift the received data by >>2 before using it.
+**Attention**
 
-## Creating your own sprites
+Reading and writing SPI registers must always be done in 8 bits even if the register uses less bits. The exception is when sending the sprite data, there you can bits for as long as CS is asserted.
 
-A small Python script reads in the sprites under `sprites/` and displays the data ready to be used for both Verilog and Python.
+When writing registers with less than 8 bits, the lower bits will be used. e.g. you want to set a color with 6 bits to 110001, just prepend two more bits: 00110001.
 
-Just run `make sprites`.
+When reading registers with less than 8 bits, e.g. for a color with 6 bits the last 2 bits that are read will be the first two bits shifted in. This means you need to shift the received data by >>2 before using it.
 
-## Creating your own gif
+## Creating Your Own sprites
+
+A small Python script reads the sprites under `sprites/` and displays the data ready to be used for both Verilog and Python.
+
+Just run `make sprites` to generate the sprite data from the images.
+
+The sprite data format is defined as follows:
+
+```
+          First bit
+              |
+	000111111000 - Line 0
+	001000000100 - Line 1
+	010001111110 - Line 2
+	100001111111 - Line 3
+	100000011000 - Line 4
+	101111111001 - Line 5
+	101111111001 - Line 6
+	100011011001 - Line 7
+	100011011001 - Line 8
+	010011000010 - Line 9
+	001011000100 - Line 10
+	000011111000 - Line 11
+   |
+Last bit
+```
+
+You can directly see from the bit data the shape of the sprite, note that the sprite is mirrored at the Y-axis.
+
+When writing new sprite data via SPI you must start with the first bit until the last as described above.
+
+## Creating an Animation
 
 Run the verilator simulation via `make sim-verilator`. The folder `images` will be populated with the individual frames.
 
@@ -96,6 +135,10 @@ You can then use imagemagicks `convert` to create a gif via: `make animation.gif
 ## Verification
 
 To run the regression tests, use `make sim-cocotb`. The resulting images can be found under `sim_build`.
+
+## FPGA Prototyping
+
+TODO
 
 ## Tips and Tricks
 
