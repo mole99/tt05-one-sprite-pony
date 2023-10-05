@@ -9,12 +9,8 @@
 
 /*
     TODO checklist
-    
-    - VGA trigger vertical
-    - 10 MHz vs 40 MHz
-    - Metastability
-    - X/Y start position
-
+    - GL test
+    - next_vertical/next_frame at the start
 */
 
 module top (
@@ -32,7 +28,10 @@ module top (
     output logic hsync,
     output logic vsync,
     output logic next_vertical,
-    output logic next_frame
+    output logic next_frame,
+    output logic hblank,
+    output logic vblank,
+    output logic de
 );
 
     /*
@@ -87,8 +86,6 @@ module top (
     
     logic signed [$clog2(HTOTAL) : 0] counter_h;
     logic signed [$clog2(VTOTAL) : 0] counter_v;
-    
-    logic hblank, vblank;
 
     logic inc_1_or_4;
 
@@ -110,7 +107,8 @@ module top (
         .FRONT_PORCH    (HFRONT),
         .SYNC_PULSE     (HSYNC),
         .BACK_PORCH     (HBACK),
-        .TOTAL          (HTOTAL)
+        .TOTAL          (HTOTAL),
+        .POLARITY       (1)
     ) timing_hor (
         .clk        (clk),
         .enable     (1'b1),
@@ -128,7 +126,8 @@ module top (
         .FRONT_PORCH    (VFRONT),
         .SYNC_PULSE     (VSYNC),
         .BACK_PORCH     (VBACK),
-        .TOTAL          (VTOTAL)
+        .TOTAL          (VTOTAL),
+        .POLARITY       (1)
     ) timing_ver (
         .clk        (clk),
         .enable     (next_vertical),
@@ -139,6 +138,8 @@ module top (
         .next       (next_frame),
         .counter    (counter_v)
     );
+    
+    assign de = !(hblank || vblank);
     
     logic [7:0] cur_time;
     logic time_dir;

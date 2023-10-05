@@ -14,3 +14,11 @@ obj_dir/
 images/
 sim_build/
 __pycache__
+icebreaker.json
+icebreaker.asc
+icebreaker.bit
+icebreaker-yosys.log
+ulx3s.json
+ulx3s.config
+ulx3s.bit
+ulx3s-yosys.log

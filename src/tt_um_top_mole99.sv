@@ -34,6 +34,9 @@ module tt_um_top_mole99 (
         .vsync          (uo_out[1]),
         .next_vertical  (uio_out[0]),
         .next_frame     (uio_out[1])
+        .hblank         (),
+        .vblank         (),
+        .de             ()
     );
 
 endmodule

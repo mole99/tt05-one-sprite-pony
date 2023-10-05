@@ -9,7 +9,8 @@ module timing #(
     parameter FRONT_PORCH,  // number of front porch pixel
     parameter SYNC_PULSE,   // number of sync pulse pixel
     parameter BACK_PORCH,   // number of back porch pixel
-    parameter TOTAL         // everything summed up
+    parameter TOTAL,        // everything summed up
+    parameter POLARITY
 )(
     input  logic clk,       // clock
     input  logic enable,    // enable counting
@@ -23,8 +24,8 @@ module timing #(
 
     // Signal to trigger next counter in the chain
     assign next = counter >= RESOLUTION - 1 && enable;
-
-    assign sync  = (counter >= -SYNC_PULSE - BACK_PORCH) && (counter < -BACK_PORCH);
+    assign sync  = POLARITY ? (counter >= -SYNC_PULSE - BACK_PORCH) && (counter < -BACK_PORCH) :
+                             ~(counter >= -SYNC_PULSE - BACK_PORCH) && (counter < -BACK_PORCH);
     assign blank = (counter >= -FRONT_PORCH - SYNC_PULSE - BACK_PORCH) && (counter < 0);
 
     // Counter logic
