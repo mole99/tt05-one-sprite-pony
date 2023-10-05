@@ -138,7 +138,9 @@ To run the regression tests, use `make sim-cocotb`. The resulting images can be 
 
 ## FPGA Prototyping
 
-TODO
+An FPGA design has been created for the ULX3S. There is also one for the icebreaker, but unfortunately it does not match the timing.
+
+Just run `make upload-ulx3s` to create the bitstream and upload it to the flash of the ULX3S.
 
 ## Tips and Tricks
 
