@@ -9,6 +9,10 @@ RTL = src/top.sv \
       src/synchronizer.sv \
       src/spi_receiver.sv
 
+GL = src/gl/primitives.v \
+     src/gl/sky130_fd_sc_hd.v \
+     src/gl/tt_um_top_mole99.v
+
 FPGA_ULX3S = fpga/rtl/ulx3s_top.sv \
 	     fpga/rtl/GFX_hdmi.v \
 	     fpga/rtl/GFX_PLL.v \
@@ -18,6 +22,10 @@ FPGA_ICEBREAKER = fpga/rtl/icebreaker_top.sv
 
 sim-icarus:
 	iverilog -g2012 -o top.vvp $(RTL) tb/tb_icarus.sv
+	vvp top.vvp -fst
+
+sim-icarus-gl:
+	iverilog -g2012 -s tb -o top.vvp $(GL) tb/tb_icarus_gl.sv -DUSE_POWER_PINS=1
 	vvp top.vvp -fst
 
 sim-verilator:
