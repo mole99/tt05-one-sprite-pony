@@ -36,7 +36,7 @@ module top (
 
     /*
         SVGA Timing for 800x600 60 Hz
-        clock = 40 MHz or clock = 10 MHz TODO
+        clock = 40 MHz or clock = 10 MHz
     */
 
     localparam WIDTH    = 800;

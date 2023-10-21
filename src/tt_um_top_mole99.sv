@@ -15,12 +15,21 @@ module tt_um_top_mole99 (
     input  wire       rst_n     // reset_n - low to reset
 );
 
-    assign uio_oe = 8'b11111111;
-    assign uio_out[7:3] = 5'b00000;
+    logic spi_sclk;
+    logic spi_mosi;
+    logic spi_miso;
+    logic spi_cs;
+
+    logic [5:0] rrggbb;
+    logic hsync;
+    logic vsync;
+    logic next_vertical;
+    logic next_frame;
+    logic de;
 
     top top_inst (
         .clk        (clk),
-        .reset_n    (rst_n && ena),
+        .reset_n    (rst_n && ena), // TODO
 
         // SPI signals
         .spi_sclk   (ui_in[0]),
@@ -29,14 +38,58 @@ module tt_um_top_mole99 (
         .spi_cs     (ui_in[2]),
 
         // SVGA signals
-        .rrggbb         (uo_out[7:2]),
-        .hsync          (uo_out[0]),
-        .vsync          (uo_out[1]),
-        .next_vertical  (uio_out[0]),
-        .next_frame     (uio_out[1]),
+        .rrggbb         (rrggbb),
+        .hsync          (hsync),
+        .vsync          (vsync),
+        .next_vertical  (next_vertical),  // TODO v_pulse
+        .next_frame     (next_frame),
         .hblank         (),
         .vblank         (),
-        .de             ()
+        .de             (de)
     );
+    
+    logic [1:0] R;
+    logic [1:0] G;
+    logic [1:0] B;
+    
+    assign R = rrggbb[5:4];
+    assign G = rrggbb[3:2];
+    assign B = rrggbb[1:0];
+    
+    // Output PMOD - Tiny VGA
+
+    assign uo_out[0] = R[1];
+    assign uo_out[1] = G[1];
+    assign uo_out[2] = B[1];
+    assign uo_out[3] = vsync;
+    assign uo_out[4] = R[0];
+    assign uo_out[5] = G[0];
+    assign uo_out[6] = B[0];
+    assign uo_out[7] = hsync;
+    
+    // Bidir PMOD - SPI and additional signals
+    
+    // Top row
+    assign spi_cs     = uio_in[0];  assign uio_oe[0] = 1'b0;
+    assign spi_mosi   = uio_in[1];  assign uio_oe[1] = 1'b0;
+    assign uio_out[2] = spi_miso;   assign uio_oe[2] = 1'b1;
+    assign spi_sclk   = uio_in[3];  assign uio_oe[3] = 1'b0;
+
+    // Bottom row
+    assign uio_out[4] = next_vertical;  assign uio_oe[4] = 1'b1;
+    assign uio_out[5] = next_frame;     assign uio_oe[5] = 1'b1;
+    assign uio_out[6] = de;             assign uio_oe[6] = 1'b1;
+    assign uio_out[7] = 1'b0; /*TODO*/  assign uio_oe[7] = 1'b1;
+
+    // Input PMOD
+
+    /*ui_in[0]
+    ui_in[1]
+    ui_in[2]
+    ui_in[3]
+    ui_in[4]
+    ui_in[5]
+    ui_in[6]
+    ui_in[7]*/
 
 endmodule
