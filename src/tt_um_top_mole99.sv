@@ -70,10 +70,10 @@ module tt_um_top_mole99 (
     // Bidir PMOD - SPI and additional signals
     
     // Top row
-    assign spi_cs     = uio_in[0];  assign uio_oe[0] = 1'b0;
-    assign spi_mosi   = uio_in[1];  assign uio_oe[1] = 1'b0;
+    assign spi_cs     = uio_in[0];  assign uio_oe[0] = 1'b0; assign uio_out[0] = 1'b0;
+    assign spi_mosi   = uio_in[1];  assign uio_oe[1] = 1'b0; assign uio_out[1] = 1'b0;
     assign uio_out[2] = spi_miso;   assign uio_oe[2] = 1'b1;
-    assign spi_sclk   = uio_in[3];  assign uio_oe[3] = 1'b0;
+    assign spi_sclk   = uio_in[3];  assign uio_oe[3] = 1'b0; assign uio_out[3] = 1'b0;
 
     // Bottom row
     assign uio_out[4] = next_vertical;  assign uio_oe[4] = 1'b1;
