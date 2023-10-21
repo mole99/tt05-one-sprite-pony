@@ -29,13 +29,13 @@ module tt_um_top_mole99 (
 
     top top_inst (
         .clk        (clk),
-        .reset_n    (rst_n && ena), // TODO
+        .reset_n    (rst_n && ena),
 
         // SPI signals
-        .spi_sclk   (ui_in[0]),
-        .spi_mosi   (ui_in[1]),
-        .spi_miso   (uio_out[2]),
-        .spi_cs     (ui_in[2]),
+        .spi_sclk   (spi_sclk),
+        .spi_mosi   (spi_mosi),
+        .spi_miso   (spi_miso),
+        .spi_cs     (spi_cs),
 
         // SVGA signals
         .rrggbb         (rrggbb),
