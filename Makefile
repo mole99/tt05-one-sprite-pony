@@ -14,11 +14,10 @@ GL = src/gl/primitives.v \
      src/gl/tt_um_top_mole99.v
 
 FPGA_ULX3S = fpga/rtl/ulx3s_top.sv \
-	     fpga/rtl/GFX_hdmi.v \
-	     fpga/rtl/GFX_PLL.v \
-	     fpga/rtl/TMDS_encoder.v
+	     fpga/rtl/pll40m.v \
+	     src/tt_um_top_mole99.sv
 
-FPGA_ICEBREAKER = fpga/rtl/icebreaker_top.sv
+# Simulation
 
 sim-icarus:
 	iverilog -g2012 -o top.vvp $(RTL) tb/tb_icarus.sv
@@ -35,8 +34,7 @@ sim-verilator:
 sim-cocotb:
 	python3 tb/tb_cocotb.py
 
-openlane: $(RTL)
-	python3 -m openlane --dockerized --flow Classic --pdk sky130A config.json
+# Various
 
 sprites:
 	python3 sprite2bit.py
@@ -44,24 +42,7 @@ sprites:
 animation.gif: images/
 	convert -delay 1.666 -loop 0 images/*.png animation.gif
 
-synth-icebreaker: icebreaker.json
-
-build-icebreaker: icebreaker.bit
-
-upload-icebreaker: icebreaker.bit
-	openFPGALoader --board=ice40_generic -f icebreaker.bit
-
-icebreaker.json: $(RTL) $(FPGA_ICEBREAKER)
-	yosys -l $(basename $@)-yosys.log -DSYNTHESIS -DICEBREAKER -p 'synth_ice40 -top icebreaker_top -json $@' $(RTL) $(FPGA_ICEBREAKER)
-
-icebreaker.asc: icebreaker.json fpga/constraints/icebreaker.pcf
-	nextpnr-ice40 --up5k --json $< \
-		--pcf fpga/constraints/icebreaker.pcf \
-		--package sg48 \
-		--asc $@
-
-icebreaker.bit: icebreaker.asc
-	icepack $< $@
+# FPGA
 
 synth-ulx3s: ulx3s.json
 
@@ -80,12 +61,10 @@ ulx3s.config: ulx3s.json fpga/constraints/ulx3s_v20.lpf
 		--textcfg $@
 
 ulx3s.bit: ulx3s.config
-	ecppack $< $@
+	ecppack $< $@ --compress
 
 clean:
 	rm -f *.vvp *.vcd
-	rm -rf openlane_run runs
-	rm -f icebreaker.json icebreaker.asc icebreaker.bit icebreaker-yosys.log
 	rm -f ulx3s.json ulx3s.config ulx3s.bit ulx3s-yosys.log
 
-.PHONY: clean openlane sim-icarus sim-verilator sprites
+.PHONY: clean sim-icarus sim-verilator sim-cocotb sprites
