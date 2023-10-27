@@ -28,10 +28,7 @@ module top (
     output logic hsync,
     output logic vsync,
     output logic next_vertical,
-    output logic next_frame,
-    output logic hblank,
-    output logic vblank,
-    output logic de
+    output logic next_frame
 );
 
     /*
@@ -81,7 +78,7 @@ module top (
                                         };
 
     /*
-        Timing
+        Horizontal and Vertical Timing
     */
     
     logic signed [$clog2(HTOTAL) : 0] counter_h;
@@ -100,6 +97,9 @@ module top (
             end
         end
     end
+    
+    logic hblank;
+    logic vblank;
      
     // Horizontal timing
     timing #(
@@ -138,8 +138,6 @@ module top (
         .next       (next_frame),
         .counter    (counter_v)
     );
-    
-    assign de = !(hblank || vblank);
     
     logic [7:0] cur_time;
     logic time_dir;

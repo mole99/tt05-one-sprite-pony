@@ -25,11 +25,12 @@ module tt_um_top_mole99 (
     logic vsync;
     logic next_vertical;
     logic next_frame;
-    logic de;
+
+    // TODO async reset, sync deassert
 
     top top_inst (
         .clk        (clk),
-        .reset_n    (rst_n && ena),
+        .reset_n    (rst_n && ena), // TODO save gate
 
         // SPI signals
         .spi_sclk   (spi_sclk),
@@ -41,11 +42,8 @@ module tt_um_top_mole99 (
         .rrggbb         (rrggbb),
         .hsync          (hsync),
         .vsync          (vsync),
-        .next_vertical  (next_vertical),  // TODO v_pulse
-        .next_frame     (next_frame),
-        .hblank         (),
-        .vblank         (),
-        .de             (de)
+        .next_vertical  (next_vertical),
+        .next_frame     (next_frame)
     );
     
     logic [1:0] R;
@@ -78,18 +76,21 @@ module tt_um_top_mole99 (
     // Bottom row
     assign uio_out[4] = next_vertical;  assign uio_oe[4] = 1'b1;
     assign uio_out[5] = next_frame;     assign uio_oe[5] = 1'b1;
-    assign uio_out[6] = de;             assign uio_oe[6] = 1'b1;
-    assign uio_out[7] = 1'b0; /*TODO*/  assign uio_oe[7] = 1'b1;
+    
+    assign uio_out[6] = 1'b0; assign uio_oe[6] = 1'b0; // - not used
+    assign uio_out[7] = 1'b0; assign uio_oe[7] = 1'b0; // - not used
 
-    // Input PMOD
+    // Input PMOD - not used
 
-    /*ui_in[0]
+    /*
+    ui_in[0]
     ui_in[1]
     ui_in[2]
     ui_in[3]
     ui_in[4]
     ui_in[5]
     ui_in[6]
-    ui_in[7]*/
+    ui_in[7]
+    */
 
 endmodule
