@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: © 2022 Leo Moser <leo.moser@pm.me>
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: Apache-2.0
 
 `timescale 1ns/1ps
 `default_nettype none
