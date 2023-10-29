@@ -50,8 +50,8 @@ module tb;
         $finish;
     end
     
-    assign rrggbb = uo_out[7:2];
-    assign hsync = uo_out[0];
-    assign vsync = uo_out[1];
+    assign rrggbb = {uo_out[0], uo_out[4], uo_out[1], uo_out[5], uo_out[2], uo_out[6]};
+    assign hsync = uo_out[7];
+    assign vsync = uo_out[3];
 
 endmodule

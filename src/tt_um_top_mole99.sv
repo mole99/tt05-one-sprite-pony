@@ -30,7 +30,7 @@ module tt_um_top_mole99 (
 
     top top_inst (
         .clk        (clk),
-        .reset_n    (rst_n && ena), // TODO save gate
+        .reset_n    (rst_n),
 
         // SPI signals
         .spi_sclk   (spi_sclk),
