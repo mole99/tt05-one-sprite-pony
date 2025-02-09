@@ -160,12 +160,19 @@ Just write to the various registers while the frame is drawn.
 
 I am excited what you are going to do with it!
 
-## Different Applications?
+## Bring-Up
 
-With some imagination One Sprite Pony can become so much more:
+Make One Sprite Pony the default design on startup:
 
-1. ROM for TT Sprite (just read out the sprite data)
+`python3 -m there push -r tt05/config.ini /`
 
-2. RAM (read and write sprite data and registers)
+Push the bring-up script to the demo board:
 
-3. hand warmer? (the design has a density of ~90%, but since all other designs are disabled at the same time, the chip will probably not warm up ;) )
+`python3 -m there push -r bring-up/tt_um_top_mole99 /examples/`
+
+To run the bring-up script, issue the following commands in the REPL:
+
+```
+>>> import examples.tt_um_top_mole99 as test
+>>> test.run()
+```
